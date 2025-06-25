@@ -9,13 +9,13 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: 🧾 Sistem Bilgisi
+      - name: Sistem Bilgisi
         shell: pwsh
         run: |
           systeminfo
           Get-PSDrive C
 
-      - name: 📦 RustDesk İndir ve Kur (C:\ SSD)
+      - name: RustDesk Kurulumu (C:\ SSD)
         shell: pwsh
         run: |
           $installPath = "C:\Program Files\RustDesk"
@@ -25,44 +25,41 @@ jobs:
               New-Item -ItemType Directory -Path $installPath | Out-Null
           }
 
-          $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/rustdesk/rustdesk/releases/latest"
-          $version = $latest.tag_name.TrimStart("v")
-          Write-Output "📌 Son sürüm: $version"
+          # Sabit link kullan, API yok
+          $version = "1.2.3"
+          $url = "https://github.com/rustdesk/rustdesk/releases/download/$version/rustdesk-$version-windows_x64-installer.exe"
 
-          $url = "https://github.com/rustdesk/rustdesk/releases/download/v$version/rustdesk-$version-windows_x64-installer.exe"
-          Write-Output "🔗 İndirme URL’si: $url"
-
-          # curl.exe ile indir (GitHub ortamı destekliyor)
+          Write-Output "🔗 RustDesk indiriliyor: $url"
           curl.exe -L $url -o $installerPath
 
           Start-Process -FilePath $installerPath -ArgumentList "/VERYSILENT /DIR=""$installPath""" -Wait
-          Write-Output "✅ Kurulum tamamlandı"
 
-      - name: 🚀 Başlangıca Eklenmesi
+      - name: Startup Kısayolu
         shell: pwsh
         run: |
           $exePath = "C:\Program Files\RustDesk\rustdesk.exe"
           $startupFolder = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
           $shortcut = "$startupFolder\rustdesk.lnk"
+
           if (Test-Path $exePath) {
               $shell = New-Object -ComObject WScript.Shell
               $shortcutObject = $shell.CreateShortcut($shortcut)
               $shortcutObject.TargetPath = $exePath
               $shortcutObject.Save()
-              Write-Output "✅ Startup klasörüne eklendi"
+              Write-Output "✅ Başlangıca eklendi."
           }
 
-      - name: 🆔 RustDesk ID
+      - name: RustDesk ID Göster (Varsa)
         shell: pwsh
         run: |
-          $conf = "$env:APPDATA\RustDesk\config\RustDesk.toml"
-          if (Test-Path $conf) {
-              Get-Content $conf
+          $configPath = "$env:APPDATA\RustDesk\config\RustDesk.toml"
+          if (Test-Path $configPath) {
+              Get-Content $configPath
           } else {
-              Write-Output "🕒 ID henüz oluşturulmamış olabilir. İlk program çalıştırılınca oluşur."
+              Write-Output "🕒 ID henüz oluşmadı, uygulama çalışınca oluşur."
           }
 
-      - name: ⏳ Kapanmasın (Sayaç)
+      - name: Sayaç
         shell: pwsh
         run: |
           for ($i = 1; $i -le 9999; $i++) {
